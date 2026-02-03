@@ -1,0 +1,198 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{left=2cm,right=2cm,top=2cm,bottom=2cm}
+
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!50!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=5pt,
+    breaklines=true,
+    frame=single,
+    tabsize=2
+}
+
+\title{Документация проекта 3DViewer v2.0}
+\author{Разработчики: sionapae, fearowpi}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Общее описание проекта}
+
+\textbf{3DViewer v2.0} — это приложение для визуализации трёхмерных моделей в формате \texttt{.obj}.  
+Программа отображает модель в каркасном виде (wireframe), позволяет выполнять аффинные преобразования (перемещение, вращение, масштабирование), выбирать тип проекции (центральная или параллельная) и изменять параметры визуализации (цвета, тип линий, тип вершин).  
+
+Проект реализован на \textbf{C++20} с использованием библиотеки \textbf{Qt 6} и принципов \textbf{ООП}.  
+Основное внимание уделено архитектуре, основанной на паттернах проектирования \textbf{Facade}, \textbf{Strategy} и \textbf{Singleton}.
+
+\section{Структура проекта}
+
+\subsection{Директории и файлы}
+
+\begin{itemize}
+    \item \texttt{gui/3d/} — реализация графического интерфейса и визуализации:
+    \begin{itemize}
+        \item \texttt{mainwindow.h / mainwindow.cpp} — главное окно и логика интерфейса пользователя.
+        \item \texttt{glwidget.h / glwidget.cpp} — OpenGL-виджет для рендеринга модели.
+        \item \texttt{projection\_strategy.h} — стратегии построения проекций.
+        \item \texttt{viewer\_facade.h} — фасад для связи GUI и рендерера.
+        \item \texttt{settings\_manager.h / settings\_manager.cpp} — управление пользовательскими настройками (Singleton).
+    \end{itemize}
+
+    \item \texttt{model/} — модуль бизнес-логики:
+    \begin{itemize}
+        \item \texttt{model.h / model.cpp} — загрузка и хранение данных 3D-модели (.obj).
+    \end{itemize}
+
+    \item \texttt{tests/} — модуль модульного тестирования (Google Test):
+    \begin{itemize}
+        \item \texttt{test\_parser.cpp} — тесты парсера OBJ-файлов и функций аффинных преобразований.
+    \end{itemize}
+
+    \item \texttt{Makefile} — скрипт сборки проекта.
+\end{itemize}
+
+\section{Архитектура приложения}
+
+Приложение построено по принципу разделения ответственности между модулями:
+
+\begin{itemize}
+    \item \textbf{MainWindow} отвечает за пользовательский интерфейс и обработку сигналов.
+    \item \textbf{Viewer\_facade} инкапсулирует доступ к логике рендеринга и модели, скрывая детали реализации.
+    \item \textbf{GLWidget} реализует визуализацию модели с помощью OpenGL.
+    \item \textbf{Model} отвечает за парсинг и хранение данных модели (.obj).
+    \item \textbf{Settings\_manager} обеспечивает централизованное хранение и загрузку пользовательских настроек.
+\end{itemize}
+
+\subsection{Класс MainWindow}
+
+\begin{itemize}
+    \item Наследует \texttt{QMainWindow}.
+    \item Обеспечивает взаимодействие пользователя с 3D-сценой.
+    \item Основные функции:
+    \begin{itemize}
+        \item Открытие и загрузка моделей;
+        \item Синхронизация ползунков и полей ввода для управления трансформациями;
+        \item Изменение цветов, типов и размеров линий и вершин;
+        \item Переключение типа проекции.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Класс GLWidget}
+
+\begin{itemize}
+    \item Наследует \texttt{QOpenGLWidget}.
+    \item Реализует рендеринг 3D-модели и вычисление аффинных матриц:
+    \begin{itemize}
+        \item \texttt{rotationMatrix()} — матрица вращения по осям X, Y, Z;
+        \item \texttt{scalingMatrix()} — матрица масштабирования;
+        \item \texttt{translationMatrix()} — матрица перемещения.
+    \end{itemize}
+    \item Обрабатывает события мыши (\texttt{mouseMoveEvent()}, \texttt{wheelEvent()}).
+\end{itemize}
+
+\subsection{Класс Model}
+
+\begin{itemize}
+    \item Отвечает за парсинг файлов \texttt{.obj}.
+    \item Хранит массивы вершин и индексов.
+    \item Реализует нормализацию координат модели и обработку некорректных данных.
+\end{itemize}
+
+\subsection{Класс Settings\_manager}
+
+\begin{itemize}
+    \item Реализует паттерн Singleton.
+    \item Сохраняет пользовательские настройки (цвет фона, тип линии, тип проекции и т.д.).
+    \item Использует Qt-класс \texttt{QSettings} для сохранения значений между сессиями.
+\end{itemize}
+
+\subsection{Класс Viewer\_facade}
+
+\begin{itemize}
+    \item Служит фасадом между \texttt{MainWindow} и \texttt{GLWidget}.
+    \item Скрывает сложность управления сценой, предоставляя простой интерфейс:
+    \begin{itemize}
+        \item \texttt{loadModel()};
+        \item \texttt{set\_background\_color()};
+        \item \texttt{update\_View()}.
+    \end{itemize}
+\end{itemize}
+
+\section{Паттерны проектирования}
+
+В проекте 3DViewer v2.0 применено несколько ключевых паттернов проектирования.
+
+\subsection{Фасад (Facade)}
+
+\textbf{Тип:} структурный паттерн.
+
+Класс \texttt{Viewer\_facade} инкапсулирует взаимодействие между графическим интерфейсом (\texttt{MainWindow}) и рендерером (\texttt{GLWidget}).  
+Это позволяет GUI не зависеть от деталей OpenGL и структуры модели.
+
+
+
+\subsection{Стратегия (Strategy)}
+
+\textbf{Тип:} поведенческий паттерн.
+
+Реализован в \texttt{projection\_strategy.h}.  
+Определяет интерфейс \texttt{Projection\_strategy} с методом \texttt{create(aspect)}, который реализуют два класса:
+\begin{itemize}
+    \item \texttt{Parallel\_strategy} — ортографическая проекция;
+    \item \texttt{Centrall\_strategy} — перспективная проекция.
+\end{itemize}
+
+
+
+\subsection{Одиночка (Singleton)}
+
+\textbf{Тип:} порождающий паттерн.
+
+Класс \texttt{Settings\_manager} гарантирует, что существует единственный объект, управляющий настройками программы.  
+Это обеспечивает единый доступ к конфигурации интерфейса и параметрам рендеринга.
+
+
+
+
+
+\section{Сборка и запуск проекта}
+
+\textbf{Сборка программы:}
+\begin{lstlisting}
+make all
+\end{lstlisting}
+
+\textbf{Запуск:}
+\begin{lstlisting}
+./viewer
+\end{lstlisting}
+
+\textbf{Очистка:}
+\begin{lstlisting}
+make clean
+\end{lstlisting}
+
+\section{Заключение}
+
+Приложение \textbf{3DViewer v2.0} реализует визуализацию 3D-моделей в формате \texttt{.obj}, поддержку основных аффинных преобразований и гибкую настройку отображения.  
+Использование паттернов \textbf{Facade}, \textbf{Strategy}, \textbf{Singleton} и архитектуры \textbf{MVC} обеспечило модульность, простоту сопровождения и расширяемость кода.  
+Проект демонстрирует применение современных подходов к проектированию программ на языке C++ с использованием Qt и OpenGL.
+
+\end{document}
